@@ -24,9 +24,9 @@ export default class DateTimeField extends Component {
       case Constants.MODE_TIME:
         return "h:mm A";
       case Constants.MODE_DATE:
-        return "MM/DD/YY";
+        return "YYYY-MM-DD";
       default:
-        return "MM/DD/YY h:mm A";
+        return "YYYY-MM-DD h:mm A";
     }
   }
 
@@ -85,7 +85,17 @@ export default class DateTimeField extends Component {
 
   onChange = (event) => {
     const value = event.target == null ? event : event.target.value;
-    if (moment(value, this.state.inputFormat, true).isValid()) {
+
+    if (event.target) { event.target.contentEditable = true }
+    if (!moment(value, this.state.inputFormat, true).isValid()) {
+      this.setState({
+        inputFormat: 'YYYY-MM-DD h:mm A',
+        selectedDate: moment(value, 'YYYY-MM-DD h:mm A', false),
+        viewDate: moment(value, 'YYYY-MM-DD h:mm A', false).startOf("month")
+      });
+    }
+
+    else if (moment(value, this.state.inputFormat, true).isValid()) {
       this.setState({
         selectedDate: moment(value, this.state.inputFormat, true),
         viewDate: moment(value, this.state.inputFormat, true).startOf("month")
@@ -93,15 +103,17 @@ export default class DateTimeField extends Component {
     }
 
     return this.setState({
-      inputValue: value
-    }, function() {
-      return this.props.onChange(moment(this.state.inputValue, this.state.inputFormat, true).format(this.props.format), value);
+      inputValue: value,
+      inputFormat: this.state.inputFormat,
+      format: this.state.inputFormat
+    }, function () {
+      return this.props.onChange(moment(this.state.inputValue, this.state.inputFormat, false).format(this.state.inputFormat), value);
     });
 
   }
 
   getValue = () => {
-    return moment(this.state.inputValue, this.props.inputFormat, true).format(this.props.format);
+    return moment(this.state.inputValue, this.props.inputFormat, false).format(this.state.inputFormat);
   }
 
   setSelectedDate = (e) => {
@@ -115,9 +127,9 @@ export default class DateTimeField extends Component {
         selectedDate: this.state.viewDate.clone().month(month).date(parseInt(e.target.innerHTML)).hour(this.state.selectedDate.hours()).minute(this.state.selectedDate.minutes())
       }, function() {
         this.closePicker();
-        this.props.onChange(this.state.selectedDate.format(this.props.format));
+        this.props.onChange(this.state.selectedDate.format(this.state.inputFormat));
         return this.setState({
-          inputValue: this.state.selectedDate.format(this.state.inputFormat)
+          inputValue: this.state.selectedDate.format(this.resolvePropsInputFormat())
         });
       });
     }
@@ -128,9 +140,9 @@ export default class DateTimeField extends Component {
       selectedDate: this.state.selectedDate.clone().hour(parseInt(e.target.innerHTML)).minute(this.state.selectedDate.minutes())
     }, function() {
       this.closePicker();
-      this.props.onChange(this.state.selectedDate.format(this.props.format));
+      this.props.onChange(this.state.selectedDate.format(this.state.inputFormat));
       return this.setState({
-        inputValue: this.state.selectedDate.format(this.state.inputFormat)
+        inputValue: this.state.selectedDate.format(this.resolvePropsInputFormat())
       });
     });
   }
@@ -140,9 +152,9 @@ export default class DateTimeField extends Component {
       selectedDate: this.state.selectedDate.clone().hour(this.state.selectedDate.hours()).minute(parseInt(e.target.innerHTML))
     }, function() {
       this.closePicker();
-      this.props.onChange(this.state.selectedDate.format(this.props.format));
+      this.props.onChange(this.state.selectedDate.format(this.state.inputFormat));
       return this.setState({
-        inputValue: this.state.selectedDate.format(this.state.inputFormat)
+        inputValue: this.state.selectedDate.format(this.resolvePropsInputFormat())
       });
     });
   }
@@ -163,7 +175,7 @@ export default class DateTimeField extends Component {
     return this.setState({
       selectedDate: this.state.selectedDate.clone().add(1, "minutes")
     }, function() {
-      this.props.onChange(this.state.selectedDate.format(this.props.format));
+      this.props.onChange(this.state.selectedDate.format(this.state.inputFormat));
       return this.setState({
         inputValue: this.state.selectedDate.format(this.resolvePropsInputFormat())
       });
@@ -174,7 +186,7 @@ export default class DateTimeField extends Component {
     return this.setState({
       selectedDate: this.state.selectedDate.clone().add(1, "hours")
     }, function() {
-      this.props.onChange(this.state.selectedDate.format(this.props.format));
+      this.props.onChange(this.state.selectedDate.format(this.state.inputFormat));
       return this.setState({
         inputValue: this.state.selectedDate.format(this.resolvePropsInputFormat())
       });
@@ -203,7 +215,7 @@ export default class DateTimeField extends Component {
     return this.setState({
       selectedDate: this.state.selectedDate.clone().subtract(1, "minutes")
     }, () => {
-      this.props.onChange(this.state.selectedDate.format(this.props.format));
+      this.props.onChange(this.state.selectedDate.format(this.state.inputFormat));
       return this.setState({
         inputValue: this.state.selectedDate.format(this.resolvePropsInputFormat())
       });
@@ -214,7 +226,7 @@ export default class DateTimeField extends Component {
     return this.setState({
       selectedDate: this.state.selectedDate.clone().subtract(1, "hours")
     }, () => {
-      this.props.onChange(this.state.selectedDate.format(this.props.format));
+      this.props.onChange(this.state.selectedDate.format(this.state.inputFormat));
       return this.setState({
         inputValue: this.state.selectedDate.format(this.resolvePropsInputFormat())
       });
@@ -248,6 +260,16 @@ export default class DateTimeField extends Component {
   }
 
   togglePicker = () => {
+    if (this.state.showDatePicker) {
+      const value = moment(this.state.inputValue, 'YYYY-MM-DD h:mm A', false).format('YYYY-MM-DD h:mm A');
+
+      this.setState({
+        inputFormat: 'YYYY-MM-DD h:mm A',
+        format: 'YYYY-MM-DD h:mm A',
+        selectedDate: moment(value, 'YYYY-MM-DD h:mm A', false),
+        viewDate: moment(value, 'YYYY-MM-DD h:mm A', false).startOf("month")
+      });
+    }
     return this.setState({
       showDatePicker: !this.state.showDatePicker,
       showTimePicker: !this.state.showTimePicker
@@ -280,7 +302,7 @@ export default class DateTimeField extends Component {
         classes.bottom = false;
         classes["pull-right"] = true;
       } else {
-        offset.top = 40;
+        offset.top = 65;
         classes.top = false;
         classes.bottom = true;
         classes["pull-right"] = true;
@@ -290,7 +312,7 @@ export default class DateTimeField extends Component {
         position: "absolute",
         top: offset.top,
         left: "auto",
-        right: 40
+        right: 30
       };
       return this.setState({
         widgetStyle: styles,

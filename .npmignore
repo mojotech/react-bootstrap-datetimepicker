@@ -6,7 +6,7 @@ test_bundle.js
 test-built
 .idea
 docs
-src
+lib
 examples
 bower.json
 dist
